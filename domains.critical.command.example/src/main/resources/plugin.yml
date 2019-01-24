@@ -1,0 +1,9 @@
+main: domains.critical.command.example.CommandExampleMain
+name: CriticalExamples
+version: '1.0'
+description: The example plugin to test command completion
+load: POSTWORLD
+author: TheCritic
+website: example.command.critical.domains
+prefix: CriticalExamples
+api-version: 1.13
