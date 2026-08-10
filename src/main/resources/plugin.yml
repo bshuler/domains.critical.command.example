@@ -7,3 +7,4 @@ author: TheCritic
 website: example.command.critical.domains
 prefix: CriticalExamples
 api-version: "26.2"
+folia-supported: true

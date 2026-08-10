@@ -107,8 +107,12 @@ implementations, not mod loaders — see `PLAN.md` milestone 3 for the full
 per-subsystem reasoning:
 
 - **Paper** (primary target), and by API compatibility, **Purpur**.
-- **Folia** — likely fine given how little this plugin does (one command,
-  no schedulers, no per-world/per-region state), but not smoke-tested.
+- **Folia** — **supported** (`folia-supported: true` in `plugin.yml`, phase
+  2). This plugin has zero schedulers, zero listeners, and zero shared
+  mutable state of any kind (no static fields in either class), so there
+  was nothing to fix to make it region-thread-safe — the flag is a
+  straightforward positive, not an unverified guess. See `PLAN.md`
+  milestone 7.
 - **Spigot** — only stable Bukkit/Spigot API is used, no Paper-only calls.
 - **Fabric / NeoForge / Forge are not applicable** — same architectural
   reasoning as every other Bukkit-API sibling in this program: these are a
@@ -141,6 +145,59 @@ per-subsystem reasoning:
   scope for the backward version walk (same precedent as
   EpicFurnaces/EpicHoppers/`domains.critical.groups`) — see PLAN.md Open
   Problems.
+
+## Tests
+
+```bash
+./gradlew test jacocoTestReport                                          # run tests + HTML/XML coverage report
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification check # full verification, matches CI expectations
+```
+
+- Report: `build/reports/jacoco/test/html/index.html` (human-readable),
+  `build/reports/jacoco/test/jacocoTestReport.xml` (machine-readable).
+- **Current status: 100% line coverage, 100% method coverage, zero
+  exclusions**, enforced by `jacocoTestCoverageVerification` (LINE and
+  BRANCH minimum `1.00` — see `build.gradle.kts`). 2 classes analyzed:
+  `CommandExampleMain`, `CommandExampleCommand`. No `BRANCH` counter
+  appears in the report at all — neither class contains a single
+  conditional branch, so branch coverage is vacuously satisfied rather
+  than a meaningful metric here.
+- **MockBukkit is pinned to a fixed Paper build on the test classpath**,
+  independent of whatever `-PpaperApiVersion` the main source set targets:
+  `testImplementation("io.papermc.paper:paper-api:26.1.2.build.74-stable")`
+  and `testImplementation("org.mockbukkit.mockbukkit:mockbukkit-v26.1.2:4.115.0")`
+  are declared explicitly rather than inherited from `compileOnly` — a newer
+  `paper-api` on the test classpath compiles fine but throws
+  `InternalDataLoadException` at test *runtime*, because MockBukkit ships a
+  bundled registry-data snapshot captured from its own exact Paper build
+  (same versions as the `domains.critical.groups`/`domains.critical.regions`
+  siblings; not re-verified independently here since it's the identical
+  known-good pin).
+- **ACF-registered commands (via `PaperCommandManager`) are invisible to
+  `server.getPluginCommand("test")` in MockBukkit tests**, same as the
+  `domains.critical.groups`/`domains.critical.regions` siblings. Use
+  `server.getCommandMap().getCommand("test")` instead.
+- Both classes are fully stateless (no static fields), so no
+  Mockito/inline-mock-maker gotchas or shared-state reset-between-tests
+  concerns applied — plain MockBukkit (`PlayerMock`,
+  `ConsoleCommandSenderMock`) was sufficient for every branch. The
+  `mockito-core` test dependency was added for parity with the sibling
+  pattern but ended up unused.
+- Tests are real: `CommandExampleCommandTest` asserts actual message
+  content from both ACF subcommand handlers against a player sender and a
+  console sender, plus two end-to-end tests that dispatch through ACF's
+  real command routing (`performCommand("test")` /
+  `performCommand("test example")`) rather than only calling the handler
+  methods directly.
+- **Jar-content regression test for the phase-1 relocation-typo fix**: the
+  `verifyAcfRelocation` Gradle task (wired into `tasks.check`, runs after
+  `shadowJar`) unzips the actual packaged jar and asserts relocated ACF
+  classes exist under `domains/critical/command/example/acf/` with no
+  unrelocated `co/aikar/commands/*` entries. This is a build-level check,
+  not a JUnit test, because JUnit exercises compiled classes, not the
+  shaded jar. Verified during phase 2 that it actually fails when the
+  original typo'd relocation target is reintroduced (not a false-positive
+  check that would pass regardless).
 
 ## Porting notes for whoever touches this next
 

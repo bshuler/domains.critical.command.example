@@ -112,8 +112,11 @@ subcommand completion, not doing anything to a player, world, or config.
 Folia-specific note: no `BukkitScheduler` calls, no shared mutable world
 state, no per-region assumptions anywhere in the 2-class source. Expected
 Folia-compatible "for free" given the total absence of anything Folia's
-region-threaded model would break — still flagged as **not
-smoke-tested** rather than claimed as verified.
+region-threaded model would break — at phase 1 time, flagged as **not
+smoke-tested** rather than claimed as verified. **Phase 2 update:**
+re-audited and confirmed; `plugin.yml` now declares `folia-supported: true`
+(see milestone 7 below). The Bukkit-API platform matrix row below is
+updated accordingly.
 
 **Bukkit-API platform matrix** (what "cross-platform" honestly means for
 a plugin like this):
@@ -122,7 +125,7 @@ a plugin like this):
 |---|---|---|
 | Paper | Supported (primary target) | Built and tested against this |
 | Purpur | Expected-compatible | Purpur is a Paper fork with a superset API; nothing here uses anything Purpur would break |
-| Folia | Untested, expected-compatible | No scheduler/shared-state usage at all (see above) — the strongest "should just work" case of any plugin in this program, but genuinely not smoke-tested |
+| Folia | **Supported** (`folia-supported: true` set, phase 2) | No scheduler/shared-state usage at all (see above) — the strongest "should just work" case of any plugin in this program; re-audited in phase 2, `folia-supported: true` added to `plugin.yml` and verified present in the packaged jar |
 | Spigot | Expected-compatible | Only stable Bukkit/Spigot API surface is used (`JavaPlugin`, `CommandSender`), no Paper-only calls |
 | CraftBukkit | Expected-compatible (same reasoning as Spigot) | Not a realistic deployment target in practice |
 | Fabric / NeoForge / Forge | **Not applicable** | Different programming model (Mixins + raw Minecraft internals), not an alternate build target for the same Bukkit-API source — see reasoning above |
@@ -166,6 +169,93 @@ precedent as EpicFurnaces/EpicHoppers/`domains.critical.groups`.
 - [x] PLAN.md checklists updated to reflect actual build results.
 - [x] Final commit + push.
 
+### 6. Phase 2: Test coverage — DONE, 100%, zero exclusions
+
+- [x] Added `jacoco` plugin (toolVersion `0.8.15`, matching the
+      `domains.critical.groups`/`domains.critical.regions` siblings — the
+      Gradle-bundled default is older and doesn't fully understand Java 25
+      class files), JUnit 5 (`junit-bom:6.1.3`), MockBukkit
+      (`org.mockbukkit.mockbukkit:mockbukkit-v26.1.2:4.115.0`) and Mockito
+      (`5.18.0`, added for parity — ended up unused, same as the `groups`
+      sibling, since both classes are fully stateless with no fields to
+      spy).
+- [x] **Test classpath pins `paper-api:26.1.2.build.74-stable` explicitly**,
+      independent of the main source set's `-PpaperApiVersion` (default
+      26.2.build.111-stable) — MockBukkit's bundled registry-data snapshot
+      is tied to that exact build; a newer `paper-api` on the test
+      classpath compiles fine but throws `InternalDataLoadException` at
+      test runtime. Same known-good pin as both siblings, reused verbatim,
+      not re-derived independently.
+- [x] `CommandExampleMainTest` (3 tests): `onEnable` registers `/test` in
+      the server's `CommandMap` (ACF's `PaperCommandManager` writes
+      directly into the command map — `server.getPluginCommand("test")`
+      never sees it, since `plugin.yml` declares no `commands:` section;
+      confirmed the hard way, matches both siblings' documented gotcha),
+      `onDisable`/`onLoad` don't throw.
+- [x] `CommandExampleCommandTest` (6 tests): both ACF subcommand handlers
+      (`onTest1`/`@Default`, `onTest2`/`@Subcommand("example")`) exercised
+      directly against a `PlayerMock` and a `ConsoleCommandSenderMock` —
+      neither handler restricts sender type, so both paths are real, not
+      redundant — plus two end-to-end tests dispatching through ACF's
+      actual command routing (`player.performCommand("test")` and
+      `player.performCommand("test example")`) to prove the registration
+      wiring in `CommandExampleMain` and the annotation-driven routing in
+      `CommandExampleCommand` both work together, not just the handler
+      bodies in isolation.
+- [x] **Jar-content regression test for the phase-1 relocation-typo fix**:
+      a `verifyAcfRelocation` Gradle task (wired into `check`) unzips the
+      actual packaged `shadowJar` output and asserts relocated ACF classes
+      exist under `domains/critical/command/example/acf/` and that no
+      unrelocated `co/aikar/commands/*` entries leaked through. This is a
+      task-level check, not a JUnit test, because JUnit exercises compiled
+      classes, not the shaded jar — a unit test cannot see a relocation
+      regression. Verified this task actually catches a regression (not a
+      false positive): reintroduced the exact original typo'd target
+      (`domains.critical.commandcompletionexample.acf`) temporarily, reran
+      `verifyAcfRelocation`, confirmed it failed with "found none", then
+      restored the fix and reran — passed clean.
+- [x] Coverage: **100% line, 100% method** across both classes (2 classes
+      analyzed — `CommandExampleCommand`, `CommandExampleMain` — matching
+      the include list exactly, confirmed via the XML report's counters,
+      not just a green `BUILD SUCCESSFUL`). No `BRANCH` counter appears in
+      the report at all: neither class contains a single conditional branch
+      (no `if`/`else`, no loops) — genuinely branch-free source, not an
+      exclusion. `jacocoTestCoverageVerification` enforces LINE and BRANCH
+      minimums of `1.00`; `tasks.check` depends on it, so the bar is
+      build-enforced, not just reported.
+- [x] **Zero exclusions.** Every line of both classes in this plugin is
+      genuinely testable via MockBukkit; there is no untestable surface
+      (no static Bukkit singletons touched outside what MockBukkit
+      provides, no client rendering, no JDBC).
+- [x] No bugs found while writing tests — the pre-existing double-semicolon
+      import quirk in `CommandExampleMain.java` (see `CLAUDE.md`) is
+      cosmetic and does not affect behavior; left as-is per the same
+      "don't fix pre-existing cosmetic quirks" precedent as the `groups`
+      sibling's console-sender bug (which *was* a real bug and *was*
+      fixed there — this repo has no equivalent real bug).
+- [x] Commit + push.
+
+### 7. Phase 2: Folia compatibility — DONE, positive verdict
+
+- [x] Static audit: zero scheduler calls (`BukkitScheduler`,
+      `getServer().getScheduler()`), zero event listeners, zero mutable
+      shared state of any kind (no static fields at all in either class —
+      `CommandExampleMain` and `CommandExampleCommand` are both fully
+      stateless), zero cross-region teleport/chunk access, zero per-world
+      assumptions. Confirmed via direct source grep, not assumption.
+- [x] **Verdict: `folia-supported: true` added to `plugin.yml`.** This is
+      the strongest possible Folia case in the entire program: a
+      genuinely stateless 2-class scaffold with one ACF command handler
+      (two trivial subcommands, each just a `sendMessage` call) and no
+      other runtime surface whatsoever — even more trivial than the
+      `domains.critical.groups` sibling's already-strongest case, since
+      that one at least has a player-vs-console branch. Re-verified the
+      shaded jar contains the flag: `unzip -p
+      build/libs/domains.critical.command.example-1.0.jar plugin.yml`
+      shows `folia-supported: true` in the packaged resource, not just the
+      source file. Jar file count unchanged at 296 files (the flag adds a
+      line to `plugin.yml`, not a new file).
+
 ## Open problems / honest blockers
 
 - ACF (`co.aikar:acf-*`) has been resolved only from `co.aikar`'s own
@@ -177,9 +267,6 @@ precedent as EpicFurnaces/EpicHoppers/`domains.critical.groups`.
   ("26.2"); per-`paperApiVersion` templating of `api-version` for the
   backward-walk builds is out of scope, matching documented precedent in
   EpicFurnaces/EpicHoppers/`domains.critical.groups`.
-- Folia compatibility is a reasoned expectation (no scheduler/shared-state
-  usage), not a smoke-tested fact — no real Folia smoke-boot was
-  performed this pass.
 
 ## Repository / git notes
 
