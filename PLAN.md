@@ -33,46 +33,55 @@ no "missing feature" here to flag as an open problem.
       from the `domains.critical.groups` scaffold case, ACF dependency
       writeup, platform summary).
 - [x] `PLAN.md` written (this file).
-- [ ] Flatten the nested `domains.critical.command.example/domains.
+- [x] Flatten the nested `domains.critical.command.example/domains.
       critical.command.example/` layout to the repo root (see `CLAUDE.md`
-      "Repo layout decision"). Remove from version control:
+      "Repo layout decision"). Removed from version control:
       `.classpath`, `.project`, `.settings/`, the committed `bin/`
       Eclipse/Buildship output directory, `.DS_Store`.
-- [ ] Rename local branch `master` → `main`, push, set as GitHub default
-      branch.
+- [x] Renamed local branch `master` → `main`, pushed. The branch-rename
+      API 422'd because `main` already existed remotely (created by the
+      `git push -u origin main`) — fell back to `gh repo edit
+      --default-branch main`, per the documented fallback. `master` left
+      intact remotely, not deleted.
 
-### 2. Modern build (latest Paper API) — TODO
+### 2. Modern build (latest Paper API) — DONE
 
-- [ ] Convert `build.gradle`/`settings.gradle` (Groovy DSL, Gradle 5.0,
+- [x] Converted `build.gradle`/`settings.gradle` (Groovy DSL, Gradle 5.0,
       `jcenter()`, Shadow 4.0.2, `compile` configuration, Java 8) to
       Kotlin DSL matching the `domains.critical.groups` pattern: Gradle
       9.x wrapper, `com.gradleup.shadow` via the `plugins {}` block,
       `org.gradle.toolchains.foojay-resolver-convention` 1.0.0 in
       `settings.gradle.kts`, Java 25 toolchain.
-- [ ] Repositories: `mavenCentral()`, `https://repo.papermc.io/repository/
+- [x] Repositories: `mavenCentral()`, `https://repo.papermc.io/repository/
       maven-public/` (the old `https://papermc.io/repo/repository/
-      maven-public/` URL used by the original build now 403s — dead), and
-      `https://repo.aikar.co/content/groups/aikar/` for ACF/TaskChain.
-- [ ] `paper-api` at the latest resolvable version, queried live (not from
+      maven-public/` URL used by the original build now 403s — confirmed
+      dead), and `https://repo.aikar.co/content/groups/aikar/` for
+      ACF/TaskChain (confirmed live).
+- [x] `paper-api` at the latest resolvable version, queried live (not from
       training memory) — confirmed via `fill.papermc.io/v3/projects/
       paper` and `repo.papermc.io`'s `paper-api` `maven-metadata.xml`:
       **26.2.build.111-stable**, same coordinate the finished siblings
       used (re-verified current at modernization time, 2026-08-10).
-- [ ] ACF bumped from the original `0.5.0-SNAPSHOT` to the current latest,
+- [x] ACF bumped from the original `0.5.0-SNAPSHOT` to the current latest,
       `0.5.1-SNAPSHOT`.
-- [ ] Fix the relocation target typo: original relocated ACF to
+- [x] Fixed the relocation target typo: original relocated ACF to
       `domains.critical.commandcompletionexample.acf`, which doesn't
       match this plugin's actual package
       (`domains.critical.command.example`). Corrected to
       `domains.critical.command.example.acf`.
-- [ ] `plugin.yml`: `version: ${version}` templated via
+- [x] `plugin.yml`: `version: '${version}'` templated via
       `processResources`; `api-version` bumped from `1.13` to `"26.2"`.
-- [ ] Green build (`./gradlew build`), jar contents verified with
-      `unzip -l` (not just BUILD SUCCESSFUL): plugin classes present, ACF
-      relocated under `domains/critical/command/example/acf/*`, no stray
-      unrelocated `co/aikar/commands/*` entries, `plugin.yml` in the jar
-      shows expected `version`/`api-version`.
-- [ ] Commit + push.
+- [x] Green build (`./gradlew build`), jar contents verified with
+      `unzip -l` (not just BUILD SUCCESSFUL — the sibling program hit an
+      empty/wrong jar twice). 296 files total: `domains/critical/
+      command/example/{CommandExampleMain,CommandExampleCommand}.class`
+      present, ACF relocated to `domains/critical/command/example/acf/*`
+      (confirmed no leftover unrelocated `co/aikar/commands/*` classes),
+      `co/aikar/locales`/`co/aikar/taskchain` correctly left unrelocated
+      (matches the corrected relocate rule, which only ever targets
+      `co.aikar.commands`). `plugin.yml` in the jar shows `version: '1.0'`
+      / `api-version: "26.2"` as expected.
+- [x] Commit + push.
 
 ### 3. Cross-platform assessment — TODO
 
