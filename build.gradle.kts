@@ -168,3 +168,14 @@ tasks.register("verifyAcfRelocation") {
 tasks.check {
     dependsOn("verifyAcfRelocation")
 }
+
+// Tier 2: boots a real headless Paper server with the packaged jar installed.
+// Opt-in (needs -PpaperServerJar=...), deliberately not wired into `check`.
+// See gradle/paper-boot-test.gradle.kts and PLAN.md.
+apply(from = "gradle/paper-boot-test.gradle.kts")
+
+// These commands are registered PROGRAMMATICALLY at runtime by ACF, so they
+// appear nowhere in plugin.yml and nothing but a live server can confirm they
+// were actually wired into the command map. Naming them here is what makes the
+// boot test's command check non-tautological for this repo.
+extra["paperBootExpectedCommands"] = listOf("test")
