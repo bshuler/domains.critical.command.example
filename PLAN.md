@@ -285,3 +285,15 @@ precedent as EpicFurnaces/EpicHoppers/`domains.critical.groups`.
   prepared commit message goes to the session scratchpad's
   `domains.critical.command.example-commit-msg.txt` instead of being
   force-committed unsigned, and all remaining non-commit work continues.
+
+## Coverage in context (measured 2026-08-13)
+
+Read from the JaCoCo XML report, not from whether the gate passes:
+
+- **Analysed surface:** 2 of 2 compiled classes (100%).
+- **Line coverage of that surface:** 100.0% (9 lines analysed).
+- Classes outside that surface are excluded by the documented exclusion list. They
+  are not covered by any test and are not runtime-verified.
+
+A passing `check` means "no regression inside the analysed surface" — it does not
+mean the whole codebase is tested to that percentage.
