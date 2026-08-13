@@ -276,8 +276,10 @@ precedent as EpicFurnaces/EpicHoppers/`domains.critical.groups`.
   (via the branch-rename API, falling back to `gh repo edit
   --default-branch main` if that 422s because `main` already exists
   remotely). Neither `master` nor any other branch is deleted.
-- Do not commit anything under `.github/workflows/` — the active `gh`
-  token for the `bshuler` account lacks the `workflow` scope.
+- `.github/workflows/` changes are pushable. The `bshuler` gh token gained the
+  `workflow` OAuth scope on 2026-08-13; earlier notes in this repo saying it
+  lacks that scope are obsolete. No CI YAML needs to be parked in a scratchpad
+  any more.
 - Commits authored as `Bert Shuler <BertShuler@proton.me>`, signed via the
   1Password SSH agent. If signing fails with no human at the keyboard, the
   prepared commit message goes to the session scratchpad's
