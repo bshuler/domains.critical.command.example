@@ -8,7 +8,7 @@ honest answer on cross-platform (mod-loader) support. See `CLAUDE.md` for
 architecture and the ACF dependency writeup.
 
 This repo is part of a larger program (`~/code/minecraft-mods`) porting all
-of Bert's Minecraft projects to build against modern Minecraft
+of Human's Minecraft projects to build against modern Minecraft
 versions/platforms. `EpicFurnaces`, `EpicHoppers`, `Spigot-InvUnload`, and
 `domains.critical.groups` are finished siblings using the same
 Gradle-9/Paper-API/foojay pattern; this repo copies that pattern rather
@@ -280,7 +280,7 @@ precedent as EpicFurnaces/EpicHoppers/`domains.critical.groups`.
   `workflow` OAuth scope on 2026-08-13; earlier notes in this repo saying it
   lacks that scope are obsolete. No CI YAML needs to be parked in a scratchpad
   any more.
-- Commits authored as `Bert Shuler <BertShuler@proton.me>`, signed via the
+- Commits authored as the repo's configured git identity, signed via the
   1Password SSH agent. If signing fails with no human at the keyboard, the
   prepared commit message goes to the session scratchpad's
   `domains.critical.command.example-commit-msg.txt` instead of being

@@ -14,7 +14,7 @@ into the jar.
 
 ## Provenance
 
-An original 2019 plugin by Bert (`TheCritic`), snapshotted into this repo
+An original 2019 plugin by Human (`TheCritic`), snapshotted into this repo
 — not a fork, no upstream. This modernization flattened the original
 nested Eclipse layout to the repo root, removed IDE artifacts from version
 control, and rebuilt it on modern Gradle so the example actually builds
